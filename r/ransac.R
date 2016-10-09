@@ -1,3 +1,8 @@
+#-----------------------------------------------------------------
+# RANSAC alogrithm draft
+#
+# TODO: Create an R package that contains ransac related functions
+#-----------------------------------------------------------------
 suppressWarnings(suppressPackageStartupMessages({
   library(gridExtra)
   library(pryr)
@@ -35,7 +40,7 @@ RANSAC <- function(data, y_col, model, model_args, n = 2, k = NA, t = NA, d = NA
   
   model_args_all <- c(model_args, data = list(data))
   model_all <- do.call(model, args = model_args_all)
-  err_abs <- abs(data[, y_col] - predict(model_all, newdata = data[, names(df) != "y", drop=FALSE]))
+  err_abs <- abs(data[, y_col] - predict(model_all, newdata = data[, names(df) != y_col, drop=FALSE]))
   
   if(is.na(t)) {
     t <- quantile(err_abs, 0.5, names = FALSE)
@@ -53,7 +58,6 @@ RANSAC <- function(data, y_col, model, model_args, n = 2, k = NA, t = NA, d = NA
   i = 1
   
   if(verbose) {
-    print("fsadfas")
     progress_pct = round(quantile(seq(1, k, length.out = 10), probs = seq(0.1, 1, length.out = 10)), 0)
     cat(sprintf("Begin RANSAC algoritm with parameters:\nn = %s\nk = %s\nt = %s \nd = %s\n\n", n, k, t, d))
   }
@@ -61,7 +65,6 @@ RANSAC <- function(data, y_col, model, model_args, n = 2, k = NA, t = NA, d = NA
   while(i <= k) {
     
     if(verbose && (i %in% progress_pct) ) {
-      print("fsadfas")
       cat(sprintf("Completion percentage: %s\n", names(progress_pct)[which(i == progress_pct)]))
     }
     
@@ -96,14 +99,13 @@ RANSAC <- function(data, y_col, model, model_args, n = 2, k = NA, t = NA, d = NA
     }
     i = i + 1
   }
-
+  
   if(!exists("model_best")) {
-    
     warning("Final model could not be found, using all data to fit the model. ")
     model_best <- model_all
-  } else {
-    model_best["call"] <- sprintf("Model with formula with %s", model_args[["formula"]])  
   }
+  model_best["call"] <- sprintf("Model with formula: %s", model_args[["formula"]])  
+  
   inliers_df = data[sort(inliers), , drop = FALSE]
   outliers_df = data[setdiff(ind, sort(inliers)), , drop = FALSE]
   if(verbose) {
@@ -112,13 +114,14 @@ RANSAC <- function(data, y_col, model, model_args, n = 2, k = NA, t = NA, d = NA
   return(list(model = model_best, inliers = inliers_df, outliers = outliers_df))
 }
 
-seed = 123
+seed = 1110
 m = 100
 x <- 1:m
 y <- x + rnorm(m, 0, 3)
 noise_ratio = c(0.25, 0.5, 1, 2, 3, 4, 5, 8, 10)
-df_list <- list()
+
 set.seed(seed)
+df_list <- list()
 do.call(partial(grid.arrange, nrow = 3), 
         lapply(noise_ratio, function(r) {
           df <- gen_dummy_data(x, y, noise_ratio = r)
